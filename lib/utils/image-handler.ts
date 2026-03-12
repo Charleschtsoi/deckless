@@ -1,5 +1,5 @@
 /**
- * Image handling utilities for deckless
+ * Image handling utilities for mobile_slide
  * Supports base64 encoding (MVP) with extensible architecture for cloud storage
  */
 

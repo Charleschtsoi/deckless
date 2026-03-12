@@ -1,19 +1,23 @@
-# Deckless
+# Mobile Slide
 
 A mobile-first, web-based presentation creator that replaces legacy desktop .pptx files with lightweight, interactive, mobile-optimized web pages.
 
 ## 🎯 Purpose
 
-**Deckless is designed primarily for people who need to present on mobile devices.** Whether you're pitching an idea on your phone, presenting in a coffee shop, or sharing slides on a tablet, Deckless creates beautiful, swipeable presentations optimized for mobile viewing and interaction.
+**Mobile Slide is designed primarily for people who need to present on mobile devices.** Whether you're pitching an idea on your phone, presenting in a coffee shop, or sharing slides on a tablet, Mobile Slide creates beautiful, scrollable presentations optimized for mobile viewing and interaction.
 
 ## ✨ Features
 
 - **Mobile-First Design**: Built from the ground up for mobile devices with touch-optimized interactions
 - **AI-Powered Generation**: Create presentations from simple text prompts and images using LLM APIs
+- **Visual Style Presets**: Choose from 11 curated themes with visual previews (Dark, Light, Specialty)
+- **Scroll-Triggered Animations**: Smooth reveal animations as you scroll through slides
+- **Inline Editing**: Edit slides directly without regenerating the entire deck
 - **Lightweight & Fast**: No heavy desktop software required - everything runs in your browser
 - **Multi-Provider Support**: Works with Claude (Anthropic), GPT (OpenAI), and Gemini (Google)
 - **Image Integration**: Upload images from your camera roll and let AI map them to relevant slides
-- **Swipeable Interface**: Natural mobile gestures for navigating through slides
+- **Vertical Scrolling**: Optimized for mobile vertical scrolling with smooth snap behavior
+- **Progress Tracking**: Visual progress bar and thumbnail navigation
 
 ## 🚀 Getting Started
 
@@ -26,8 +30,8 @@ A mobile-first, web-based presentation creator that replaces legacy desktop .ppt
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Charleschtsoi/deckless.git
-cd deckless
+git clone https://github.com/Charleschtsoi/mobile_slide.git
+cd mobile_slide
 ```
 
 2. Install dependencies:
@@ -75,13 +79,13 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-deckless/
+mobile_slide/
 ├── app/
 │   ├── api/generate/    # API route for deck generation
 │   └── page.tsx          # Main entry point
 ├── components/
 │   ├── creator/          # Creator UI components
-│   ├── viewer/           # Viewer UI components (coming soon)
+│   ├── viewer/           # Viewer UI components
 │   └── shared/           # Shared components
 └── lib/
     ├── schemas/          # Zod validation schemas
