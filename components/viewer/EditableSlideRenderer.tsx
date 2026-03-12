@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Edit2, Check, X as XIcon } from 'lucide-react';
 import { Slide } from '@/lib/schemas/deck-schema';
+import { getTitleSizeClass, getContentSizeClass, getLineHeightClass, isContentTooLong } from '@/lib/utils/text-sizing';
 
 interface EditableSlideRendererProps {
   slide: Slide;
@@ -35,6 +36,12 @@ export default function EditableSlideRenderer({
   const bgColor = theme?.backgroundColor || '#ffffff';
   const textColor = theme?.textColor || '#1f2937';
   const primaryColor = theme?.primaryColor || '#3b82f6';
+  
+  // Get dynamic text sizes based on content length
+  const titleSizeClass = slide.title ? getTitleSizeClass(slide.title) : 'text-4xl sm:text-5xl md:text-6xl';
+  const contentSizeClass = getContentSizeClass(slide.content);
+  const lineHeightClass = getLineHeightClass(slide.content);
+  const contentTooLong = isContentTooLong(slide.content);
 
   useEffect(() => {
     if (editingTitle && titleInputRef.current) {
@@ -110,7 +117,7 @@ export default function EditableSlideRenderer({
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
               onKeyDown={handleTitleKeyDown}
-              className="flex-1 text-4xl sm:text-5xl md:text-6xl font-bold border-2 border-blue-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`flex-1 ${titleSizeClass} font-bold border-2 border-blue-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
               style={{ color: primaryColor }}
             />
             <button
@@ -141,7 +148,7 @@ export default function EditableSlideRenderer({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-8 sm:mb-12 leading-tight ${
+          className={`${titleSizeClass} font-bold mb-8 sm:mb-12 leading-tight ${
             isEditMode ? 'hover:bg-gray-100 rounded-lg px-2 py-1 transition-colors' : ''
           }`}
           style={{ color: primaryColor }}
@@ -167,7 +174,7 @@ export default function EditableSlideRenderer({
             onChange={(e) => setEditedContent(e.target.value)}
             onKeyDown={handleContentKeyDown}
             rows={10}
-            className="w-full text-xl sm:text-2xl md:text-3xl leading-relaxed border-2 border-blue-500 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            className={`w-full ${contentSizeClass} ${lineHeightClass} border-2 border-blue-500 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y`}
             style={{ minHeight: '200px' }}
           />
           <div className="flex items-center gap-2 mt-2">
@@ -193,6 +200,11 @@ export default function EditableSlideRenderer({
       );
     }
 
+    // Get dynamic text sizes based on content length
+    const contentSizeClass = getContentSizeClass(slide.content);
+    const lineHeightClass = getLineHeightClass(slide.content);
+    const contentTooLong = isContentTooLong(slide.content);
+    
     return (
       <div
         className={`w-full max-w-3xl mx-auto space-y-4 ${
@@ -204,9 +216,9 @@ export default function EditableSlideRenderer({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className={`text-xl sm:text-2xl md:text-3xl leading-relaxed ${
+          className={`${contentSizeClass} ${lineHeightClass} ${
             isEditMode ? 'hover:bg-gray-100 rounded-lg px-4 py-2 transition-colors' : ''
-          }`}
+          } ${contentTooLong ? 'overflow-y-auto max-h-[60vh]' : ''}`}
         >
           {slide.content.split('\n').map((line, index) => (
             line.trim() && (
@@ -273,16 +285,20 @@ export default function EditableSlideRenderer({
                 }`}
                 onClick={() => isEditMode && setEditingContent(true)}
               >
-                {slide.content.split('\n').filter(Boolean).map((item, index) => (
-                  <div
-                    key={index}
-                    className={`p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm ${
-                      isEditMode ? 'hover:bg-gray-100 transition-colors' : ''
-                    }`}
-                  >
-                    <p className="text-lg sm:text-xl leading-relaxed">{item}</p>
-                  </div>
-                ))}
+                {slide.content.split('\n').filter(Boolean).map((item, index) => {
+                  const itemSizeClass = getContentSizeClass(item);
+                  const itemLineHeight = getLineHeightClass(item);
+                  return (
+                    <div
+                      key={index}
+                      className={`p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm ${
+                        isEditMode ? 'hover:bg-gray-100 transition-colors' : ''
+                      }`}
+                    >
+                      <p className={`${itemSizeClass} ${itemLineHeight}`}>{item}</p>
+                    </div>
+                  );
+                })}
                 {isEditMode && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 text-gray-400 text-sm col-span-full justify-center mt-2">
                     <Edit2 className="w-4 h-4" />

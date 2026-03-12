@@ -38,6 +38,10 @@ export const SlideSchema = z.object({
   imageRef: z.string().optional(), // Maps to uploaded image key
   layout: LayoutSchema,
   metadata: z.record(z.string(), z.any()).optional(),
+  // Optional rich content fields for enhanced presentations
+  speakerNotes: z.string().optional(), // Additional context for presenter
+  keyPoints: z.array(z.string()).optional(), // Extracted key points from content
+  dataPoints: z.record(z.string(), z.any()).optional(), // Supporting data/metrics
 });
 
 export type Slide = z.infer<typeof SlideSchema>;

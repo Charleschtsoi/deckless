@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Slide } from '@/lib/schemas/deck-schema';
 import { getAnimationVariants, revealVariants, staggerContainer, staggerItem } from '@/lib/utils/animation-variants';
+import { getTitleSizeClass, getContentSizeClass, getLineHeightClass, isContentTooLong } from '@/lib/utils/text-sizing';
 
 interface SlideRendererProps {
   slide: Slide;
@@ -24,6 +25,12 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
   
   const titleVariants = getAnimationVariants(revealVariants);
   const contentVariants = getAnimationVariants(staggerContainer);
+  
+  // Get dynamic text sizes based on content length
+  const titleSizeClass = slide.title ? getTitleSizeClass(slide.title) : 'text-4xl sm:text-5xl md:text-6xl';
+  const contentSizeClass = getContentSizeClass(slide.content);
+  const lineHeightClass = getLineHeightClass(slide.content);
+  const contentTooLong = isContentTooLong(slide.content);
 
   const renderContent = () => {
     switch (slide.layout) {
@@ -35,7 +42,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
                 initial="hidden"
                 animate={isInView ? 'visible' : 'hidden'}
                 variants={titleVariants}
-                className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 sm:mb-12 leading-tight"
+                className={`${titleSizeClass} font-bold mb-8 sm:mb-12 leading-tight`}
                 style={{ color: primaryColor }}
               >
                 {slide.title}
@@ -45,7 +52,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
               initial="hidden"
               animate={isInView ? 'visible' : 'hidden'}
               variants={contentVariants}
-              className="text-xl sm:text-2xl md:text-3xl leading-relaxed max-w-3xl space-y-4"
+              className={`${contentSizeClass} ${lineHeightClass} max-w-3xl space-y-4 ${contentTooLong ? 'overflow-y-auto max-h-[60vh]' : ''}`}
             >
               {slide.content.split('\n').map((line, index) => (
                 line.trim() && (
@@ -67,7 +74,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
                   initial="hidden"
                   animate={isInView ? 'visible' : 'hidden'}
                   variants={getAnimationVariants({ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5 } } })}
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+                  className={`${titleSizeClass} font-bold leading-tight`}
                   style={{ color: primaryColor }}
                 >
                   {slide.title}
@@ -77,7 +84,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
                 initial="hidden"
                 animate={isInView ? 'visible' : 'hidden'}
                 variants={contentVariants}
-                className="text-lg sm:text-xl md:text-2xl leading-relaxed space-y-4"
+                className={`${contentSizeClass} ${lineHeightClass} space-y-4 ${contentTooLong ? 'overflow-y-auto max-h-[50vh]' : ''}`}
               >
                 {slide.content.split('\n').map((line, index) => (
                   line.trim() && (
@@ -115,7 +122,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
                 initial="hidden"
                 animate={isInView ? 'visible' : 'hidden'}
                 variants={titleVariants}
-                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-12 text-center leading-tight"
+                className={`${titleSizeClass} font-bold mb-12 text-center leading-tight`}
                 style={{ color: primaryColor }}
               >
                 {slide.title}
@@ -127,15 +134,19 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
               variants={contentVariants}
               className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto"
             >
-              {slide.content.split('\n').filter(Boolean).map((item, index) => (
-                <motion.div
-                  key={index}
-                  variants={staggerItem}
-                  className="p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm"
-                >
-                  <p className="text-lg sm:text-xl leading-relaxed">{item}</p>
-                </motion.div>
-              ))}
+              {slide.content.split('\n').filter(Boolean).map((item, index) => {
+                const itemSizeClass = getContentSizeClass(item);
+                const itemLineHeight = getLineHeightClass(item);
+                return (
+                  <motion.div
+                    key={index}
+                    variants={staggerItem}
+                    className="p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm"
+                  >
+                    <p className={`${itemSizeClass} ${itemLineHeight}`}>{item}</p>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         );
@@ -148,7 +159,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
                 initial="hidden"
                 animate={isInView ? 'visible' : 'hidden'}
                 variants={titleVariants}
-                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-8 leading-tight"
+                className={`${titleSizeClass} font-bold mb-8 leading-tight`}
                 style={{ color: primaryColor }}
               >
                 {slide.title}
@@ -158,7 +169,7 @@ export default function SlideRenderer({ slide, theme }: SlideRendererProps) {
               initial="hidden"
               animate={isInView ? 'visible' : 'hidden'}
               variants={contentVariants}
-              className="text-lg sm:text-xl md:text-2xl leading-relaxed space-y-4 max-w-3xl"
+              className={`${contentSizeClass} ${lineHeightClass} space-y-4 max-w-3xl ${contentTooLong ? 'overflow-y-auto max-h-[60vh]' : ''}`}
             >
               {slide.content.split('\n').map((line, index) => (
                 line.trim() && (
