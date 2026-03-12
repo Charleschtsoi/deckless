@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronUp, ChevronDown, X, Edit2, Eye } from 'lucide-react';
+import { ChevronUp, ChevronDown, X, Edit2, Eye, Palette } from 'lucide-react';
 import { SlideDeck } from '@/lib/schemas/deck-schema';
 import EditableSlideRenderer from './EditableSlideRenderer';
+import ProgressBar from './ProgressBar';
+import SlideThumbnails from './SlideThumbnails';
+import StyleEditor from './StyleEditor';
 import { updateSlideTitle, updateSlideContent, cloneDeck } from '@/lib/utils/slide-editor';
 
 interface DeckViewerProps {
@@ -16,6 +19,7 @@ interface DeckViewerProps {
 export default function DeckViewer({ deck, onClose, onDeckUpdate }: DeckViewerProps) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showStyleEditor, setShowStyleEditor] = useState(false);
   const [editedDeck, setEditedDeck] = useState<SlideDeck>(cloneDeck(deck));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -93,6 +97,14 @@ export default function DeckViewer({ deck, onClose, onDeckUpdate }: DeckViewerPr
     }
   };
 
+  // Handle style change
+  const handleStyleChange = (updatedDeck: SlideDeck) => {
+    setEditedDeck(updatedDeck);
+    if (onDeckUpdate) {
+      onDeckUpdate(updatedDeck);
+    }
+  };
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -138,57 +150,80 @@ export default function DeckViewer({ deck, onClose, onDeckUpdate }: DeckViewerPr
   const currentSlide = editedDeck.slides[currentSlideIndex];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <>
+      {/* Style Editor Modal */}
+      {showStyleEditor && (
+        <StyleEditor
+          deck={editedDeck}
+          onStyleChange={handleStyleChange}
+          onClose={() => setShowStyleEditor(false)}
+        />
+      )}
+
+      <div className="fixed inset-0 z-50 bg-black flex flex-col">
       {/* Header */}
       <div className={`absolute top-0 left-0 right-0 z-20 transition-colors ${
         isEditMode ? 'bg-gradient-to-b from-blue-900/90 to-transparent' : 'bg-gradient-to-b from-black/90 to-transparent'
       } p-4`}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-            <h1 className="text-white font-semibold text-lg truncate">
-              {editedDeck.title}
-            </h1>
-            {isEditMode && (
-              <span className="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded-full">
-                EDIT MODE
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
-                isEditMode
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-              aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
-            >
-              {isEditMode ? (
-                <>
-                  <Eye className="w-4 h-4" />
-                  <span className="text-sm hidden sm:inline">View</span>
-                </>
-              ) : (
-                <>
-                  <Edit2 className="w-4 h-4" />
-                  <span className="text-sm hidden sm:inline">Edit</span>
-                </>
+        <div className="max-w-4xl mx-auto space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               )}
-            </button>
-            <div className="text-white text-sm">
-              {currentSlideIndex + 1} / {totalSlides}
+              <h1 className="text-white font-semibold text-lg truncate">
+                {editedDeck.title}
+              </h1>
+              {isEditMode && (
+                <span className="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded-full">
+                  EDIT MODE
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowStyleEditor(true)}
+                className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2"
+                aria-label="Change style"
+              >
+                <Palette className="w-4 h-4" />
+                <span className="text-sm hidden sm:inline">Style</span>
+              </button>
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  isEditMode
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+                aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
+              >
+                {isEditMode ? (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    <span className="text-sm hidden sm:inline">View</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="w-4 h-4" />
+                    <span className="text-sm hidden sm:inline">Edit</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
+          
+          {/* Progress Bar */}
+          <ProgressBar
+            currentSlide={currentSlideIndex}
+            totalSlides={totalSlides}
+          />
         </div>
       </div>
 
@@ -246,28 +281,21 @@ export default function DeckViewer({ deck, onClose, onDeckUpdate }: DeckViewerPr
         </button>
       </div>
 
-      {/* Slide Indicators - Bottom */}
+      {/* Slide Navigation - Bottom */}
       <div className={`absolute bottom-0 left-0 right-0 z-20 transition-colors ${
         isEditMode ? 'bg-gradient-to-t from-blue-900/90 to-transparent' : 'bg-gradient-to-t from-black/90 to-transparent'
       } p-4`}>
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-2 justify-center flex-wrap">
-            {editedDeck.slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => scrollToSlide(index)}
-                className={`
-                  h-2 rounded-full transition-all
-                  ${index === currentSlideIndex
-                    ? 'bg-white w-8'
-                    : 'bg-white/40 w-2 hover:bg-white/60'
-                  }
-                `}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-          <div className="text-white text-xs text-center mt-2 opacity-75">
+        <div className="max-w-4xl mx-auto space-y-3">
+          {/* Slide Thumbnails */}
+          <SlideThumbnails
+            slides={editedDeck.slides}
+            currentSlideIndex={currentSlideIndex}
+            onSlideSelect={scrollToSlide}
+            theme={editedDeck.theme}
+          />
+          
+          {/* Help Text */}
+          <div className="text-white text-xs text-center opacity-75">
             {isEditMode ? (
               <>Edit Mode: Click on text to edit • Press 'E' to toggle • Esc to exit</>
             ) : (
@@ -276,6 +304,7 @@ export default function DeckViewer({ deck, onClose, onDeckUpdate }: DeckViewerPr
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

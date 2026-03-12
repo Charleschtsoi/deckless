@@ -4,13 +4,17 @@ import { useState } from 'react';
 import PromptInput from './PromptInput';
 import ImageUpload from './ImageUpload';
 import GenerateButton from './GenerateButton';
+import StylePresetSelector from './StylePresetSelector';
 import DeckViewer from '@/components/viewer/DeckViewer';
 import { ProcessedImage } from '@/lib/utils/image-handler';
 import { SlideDeck } from '@/lib/schemas/deck-schema';
+import { StylePreset, getDefaultPreset } from '@/lib/presets/style-presets';
 
 export default function DeckCreator() {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<ProcessedImage[]>([]);
+  const [selectedStyle, setSelectedStyle] = useState<StylePreset>(getDefaultPreset());
+  const [showStyleSelector, setShowStyleSelector] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedDeck, setGeneratedDeck] = useState<SlideDeck | null>(null);
@@ -27,6 +31,7 @@ export default function DeckCreator() {
     try {
       const formData = new FormData();
       formData.append('prompt', prompt);
+      formData.append('stylePresetId', selectedStyle.id);
       
       // Add images as base64 data
       images.forEach((image, index) => {
@@ -110,6 +115,64 @@ export default function DeckCreator() {
             onImagesChange={setImages}
             disabled={loading}
           />
+
+          {/* Style Selector */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">
+                Presentation Style
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowStyleSelector(!showStyleSelector)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                disabled={loading}
+              >
+                {showStyleSelector ? 'Hide Styles' : 'Choose Style'}
+              </button>
+            </div>
+            {showStyleSelector ? (
+              <StylePresetSelector
+                onSelect={(preset) => {
+                  setSelectedStyle(preset);
+                  setShowStyleSelector(false);
+                }}
+                initialPreset={selectedStyle}
+              />
+            ) : (
+              <div
+                onClick={() => setShowStyleSelector(true)}
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-lg flex-shrink-0"
+                    style={{ backgroundColor: selectedStyle.theme.backgroundColor }}
+                  >
+                    <div
+                      className="w-full h-full rounded-lg flex items-center justify-center text-xs font-bold"
+                      style={{ color: selectedStyle.theme.primaryColor }}
+                    >
+                      {selectedStyle.name.charAt(0)}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{selectedStyle.name}</p>
+                    <p className="text-sm text-gray-600">{selectedStyle.description}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {selectedStyle.previewColors.slice(0, 3).map((color, index) => (
+                      <div
+                        key={index}
+                        className="w-4 h-4 rounded-full border border-gray-200"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Error Display */}
           {error && (

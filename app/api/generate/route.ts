@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validateSlideDeck } from '@/lib/schemas/deck-schema';
+import { getPresetById, getDefaultPreset } from '@/lib/presets/style-presets';
 
 /**
  * LLM Provider abstraction
  */
 interface LLMProvider {
-  generateDeck(prompt: string, images: ImageData[]): Promise<unknown>;
+  generateDeck(prompt: string, images: ImageData[], stylePreset?: { theme: any }): Promise<unknown>;
 }
 
 interface ImageData {
@@ -174,12 +175,20 @@ class GPTProvider implements LLMProvider {
     this.apiKey = apiKey;
   }
 
-  async generateDeck(prompt: string, images: ImageData[]): Promise<unknown> {
+  async generateDeck(prompt: string, images: ImageData[], stylePreset?: { theme: any }): Promise<unknown> {
     // TODO: Implement OpenAI API integration
     // This is a stub that returns a sample deck structure with 8+ slides
     const systemPrompt = buildSystemPrompt(prompt, images.length);
     
     const title = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+    
+    const theme = stylePreset?.theme || {
+      primaryColor: '#3b82f6',
+      secondaryColor: '#8b5cf6',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'system-ui',
+    };
     
     return {
       title: title || 'Professional Presentation',
@@ -241,13 +250,7 @@ class GPTProvider implements LLMProvider {
           layout: 'centered',
         },
       ],
-      theme: {
-        primaryColor: '#3b82f6',
-        secondaryColor: '#8b5cf6',
-        backgroundColor: '#ffffff',
-        textColor: '#1f2937',
-        fontFamily: 'system-ui',
-      },
+      theme,
     };
   }
 }
@@ -262,12 +265,20 @@ class GeminiProvider implements LLMProvider {
     this.apiKey = apiKey;
   }
 
-  async generateDeck(prompt: string, images: ImageData[]): Promise<unknown> {
+  async generateDeck(prompt: string, images: ImageData[], stylePreset?: { theme: any }): Promise<unknown> {
     // TODO: Implement Gemini API integration
     // This is a stub that returns a sample deck structure with 8+ slides
     const systemPrompt = buildSystemPrompt(prompt, images.length);
     
     const title = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+    
+    const theme = stylePreset?.theme || {
+      primaryColor: '#3b82f6',
+      secondaryColor: '#8b5cf6',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'system-ui',
+    };
     
     return {
       title: title || 'Professional Presentation',
@@ -329,13 +340,7 @@ class GeminiProvider implements LLMProvider {
           layout: 'centered',
         },
       ],
-      theme: {
-        primaryColor: '#3b82f6',
-        secondaryColor: '#8b5cf6',
-        backgroundColor: '#ffffff',
-        textColor: '#1f2937',
-        fontFamily: 'system-ui',
-      },
+      theme,
     };
   }
 }
@@ -372,6 +377,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData();
     const prompt = formData.get('prompt') as string;
+    const stylePresetId = (formData.get('stylePresetId') as string) || 'minimalist';
 
     if (!prompt || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -379,6 +385,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Get style preset
+    const stylePreset = getPresetById(stylePresetId) || getDefaultPreset();
 
     // Extract images from form data
     const images: ImageData[] = [];
@@ -402,7 +411,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate deck
-    const rawDeck = await provider.generateDeck(prompt, images);
+    const rawDeck = await provider.generateDeck(prompt, images, stylePreset);
 
     // Validate response against schema
     let deck;
