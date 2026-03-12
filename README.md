@@ -103,7 +103,7 @@ Contributions are welcome! This is an open-source project designed to help peopl
 
 ## 📝 License
 
-[Add your license here]
+MIT
 
 ## 🙏 Acknowledgments
 
