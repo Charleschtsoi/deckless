@@ -37,7 +37,7 @@ export const SlideSchema = z.object({
   content: z.string(),
   imageRef: z.string().optional(), // Maps to uploaded image key
   layout: LayoutSchema,
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export type Slide = z.infer<typeof SlideSchema>;
@@ -47,7 +47,7 @@ export type Slide = z.infer<typeof SlideSchema>;
  */
 export const SlideDeckSchema = z.object({
   title: z.string(),
-  slides: z.array(SlideSchema).min(1),
+  slides: z.array(SlideSchema).min(8, 'Presentation must have at least 8 slides'),
   theme: ThemeSchema,
 });
 

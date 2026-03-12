@@ -4,6 +4,7 @@ import { useState } from 'react';
 import PromptInput from './PromptInput';
 import ImageUpload from './ImageUpload';
 import GenerateButton from './GenerateButton';
+import DeckViewer from '@/components/viewer/DeckViewer';
 import { ProcessedImage } from '@/lib/utils/image-handler';
 import { SlideDeck } from '@/lib/schemas/deck-schema';
 
@@ -60,6 +61,27 @@ export default function DeckCreator() {
 
   const canGenerate = prompt.trim().length > 0 && !loading;
 
+  // Handle deck updates from viewer
+  const handleDeckUpdate = (updatedDeck: SlideDeck) => {
+    setGeneratedDeck(updatedDeck);
+  };
+
+  // Show viewer if deck is generated
+  if (generatedDeck) {
+    return (
+      <DeckViewer
+        deck={generatedDeck}
+        onClose={() => {
+          setGeneratedDeck(null);
+          // Optionally reset form
+          // setPrompt('');
+          // setImages([]);
+        }}
+        onDeckUpdate={handleDeckUpdate}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -103,15 +125,6 @@ export default function DeckCreator() {
             loading={loading}
           />
         </div>
-
-        {/* Success Message */}
-        {generatedDeck && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800">
-              Presentation generated successfully! ({generatedDeck.slides.length} slides)
-            </p>
-          </div>
-        )}
 
         {/* Footer Info */}
         <div className="mt-8 text-center text-sm text-gray-500">
