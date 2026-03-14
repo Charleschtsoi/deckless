@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { validateSlideDeck } from '@/lib/schemas/deck-schema';
 import { getPresetById, getDefaultPreset } from '@/lib/presets/style-presets';
+import { createAgentOrchestrator } from '@/lib/agents/agent-factory';
 
 /**
  * LLM Provider abstraction
@@ -15,12 +16,16 @@ interface ImageData {
   base64: string;
   name: string;
   mimeType: string;
+  type?: 'image' | 'pdf';
 }
 
 /**
  * Build system prompt for LLM to act as professional consultant
  */
-function buildSystemPrompt(userPrompt: string, imageCount: number): string {
+function buildSystemPrompt(userPrompt: string, images: ImageData[]): string {
+  const imageCount = images.length;
+  const imageFiles = images.filter(img => img.type !== 'pdf');
+  const pdfFiles = images.filter(img => img.type === 'pdf');
   return `You are a professional consultant from Accenture/IBM with expertise in creating compelling business presentations.
 
 Your task is to create a comprehensive, professional presentation deck based on the user's request.
@@ -95,7 +100,12 @@ When the user provides a simple prompt (e.g., "coffee shop pitch", "new app idea
 ${buildDetailedSlideInstructions()}
 
 USER REQUEST: ${userPrompt}
-${imageCount > 0 ? `\nIMAGES PROVIDED: ${imageCount} image(s) - incorporate these into relevant slides where appropriate.` : ''}
+${imageCount > 0 ? (() => {
+  const parts = [];
+  if (imageFiles.length > 0) parts.push(`${imageFiles.length} image(s)`);
+  if (pdfFiles.length > 0) parts.push(`${pdfFiles.length} PDF file(s)`);
+  return `\nFILES PROVIDED: ${parts.join(' and ')} - analyze and incorporate content from these files into relevant slides where appropriate. For PDFs, extract key information, statistics, and insights to enrich the presentation.`;
+})() : ''}
 
 Return a JSON object matching this exact structure:
 {
@@ -349,7 +359,7 @@ class ClaudeProvider implements LLMProvider {
   async generateDeck(prompt: string, images: ImageData[]): Promise<unknown> {
     // TODO: Implement Claude API integration
     // This is a stub that returns a sample deck structure with 8+ slides
-    const systemPrompt = buildSystemPrompt(prompt, images.length);
+    const systemPrompt = buildSystemPrompt(prompt, images);
     
     // Generate sample slides following consultant structure
     const title = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
@@ -438,7 +448,7 @@ class GPTProvider implements LLMProvider {
   async generateDeck(prompt: string, images: ImageData[], stylePreset?: { theme: any }): Promise<unknown> {
     // TODO: Implement OpenAI API integration
     // This is a stub that returns a sample deck structure with 8+ slides
-    const systemPrompt = buildSystemPrompt(prompt, images.length);
+    const systemPrompt = buildSystemPrompt(prompt, images);
     
     const title = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
     
@@ -586,7 +596,7 @@ class GeminiProvider implements LLMProvider {
   }
 
   async generateDeck(prompt: string, images: ImageData[], stylePreset?: { theme: any }): Promise<unknown> {
-    const systemPrompt = buildSystemPrompt(prompt, images.length);
+    const systemPrompt = buildSystemPrompt(prompt, images);
     
     // Validate API key
     if (!this.apiKey || this.apiKey.trim().length === 0) {
@@ -604,23 +614,26 @@ class GeminiProvider implements LLMProvider {
       
       console.log('Calling Gemini API with model:', modelName);
       console.log('Prompt length:', systemPrompt.length);
-      console.log('Images count:', images.length);
+      const imageCount = images.filter(img => img.type !== 'pdf').length;
+      const pdfCount = images.filter(img => img.type === 'pdf').length;
+      console.log(`Files count: ${images.length} (${imageCount} images, ${pdfCount} PDFs)`);
 
       // Prepare content parts
       const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
         { text: systemPrompt }
       ];
 
-      // Add images if provided
+      // Add images and PDFs if provided
       if (images.length > 0) {
-        for (const image of images) {
+        for (const file of images) {
           parts.push({
             inlineData: {
-              mimeType: image.mimeType,
-              data: image.base64,
+              mimeType: file.mimeType,
+              data: file.base64,
             },
           });
         }
+        console.log(`Added ${images.length} file(s) to request (${imageCount} images, ${pdfCount} PDFs)`);
       }
 
       // Generate content
@@ -1015,6 +1028,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const prompt = formData.get('prompt') as string;
     const stylePresetId = (formData.get('stylePresetId') as string) || 'minimalist';
+    const useMultiAgent = (formData.get('useMultiAgent') as string) !== 'false'; // Default to true
 
     if (!prompt || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -1026,18 +1040,64 @@ export async function POST(request: NextRequest) {
     // Get style preset
     const stylePreset = getPresetById(stylePresetId) || getDefaultPreset();
 
-    // Extract images from form data
+    // Extract images and PDFs from form data
     const images: ImageData[] = [];
     let index = 0;
     while (formData.has(`image_${index}`)) {
       const base64 = formData.get(`image_${index}`) as string;
-      const name = (formData.get(`image_${index}_name`) as string) || `image_${index}`;
+      const name = (formData.get(`image_${index}_name`) as string) || `file_${index}`;
       const mimeType = (formData.get(`image_${index}_mime`) as string) || 'image/jpeg';
+      const type = mimeType === 'application/pdf' ? 'pdf' : 'image';
       
-      images.push({ base64, name, mimeType });
+      images.push({ base64, name, mimeType, type });
       index++;
     }
 
+    // Use multi-agent workflow if enabled (default)
+    if (useMultiAgent) {
+      try {
+        // Get API key for agents (prefer Gemini, fallback to others)
+        const apiKey = 
+          process.env.GOOGLE_API_KEY || 
+          process.env.CLAUDE_API_KEY || 
+          process.env.OPENAI_API_KEY;
+
+        if (!apiKey) {
+          console.warn('No API key found for multi-agent workflow, falling back to legacy');
+          // Fall through to legacy implementation
+        } else {
+          // Use Gemini API key for all agents (they can be configured differently later)
+          const orchestrator = createAgentOrchestrator(apiKey);
+          
+          console.log('[Route] Using multi-agent workflow');
+          const result = await orchestrator.execute(prompt, images, stylePreset);
+
+          if (result.success && result.deck) {
+            // Log execution metrics
+            console.log('[Route] Multi-agent execution completed', {
+              totalTime: result.metrics.totalTime,
+              decisionTime: result.metrics.decisionTime,
+              researchTime: result.metrics.researchTime,
+              contentTime: result.metrics.contentTime,
+              validationTime: result.metrics.validationTime,
+              correctionIterations: result.metrics.correctionIterations,
+            });
+
+            return NextResponse.json(result.deck);
+          } else {
+            console.error('[Route] Multi-agent workflow failed:', result.error);
+            // Fall through to legacy implementation
+          }
+        }
+      } catch (multiAgentError) {
+        console.error('[Route] Multi-agent workflow error:', multiAgentError);
+        // Fall through to legacy implementation
+      }
+    }
+
+    // Legacy single-shot implementation (fallback)
+    console.log('[Route] Using legacy single-shot implementation');
+    
     // Get LLM provider
     const provider = getLLMProvider();
     if (!provider) {

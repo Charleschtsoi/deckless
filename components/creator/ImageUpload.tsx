@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, FileText } from 'lucide-react';
 import { ProcessedImage, validateImageFile } from '@/lib/utils/image-handler';
 
 interface ImageUploadProps {
@@ -139,7 +139,7 @@ export default function ImageUpload({
   return (
     <div className="w-full">
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        Upload Images ({images.length}/{maxImages})
+        Upload Images & PDFs ({images.length}/{maxImages})
       </label>
 
       {/* Drop Zone */}
@@ -167,7 +167,7 @@ export default function ImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           multiple
           onChange={handleFileInput}
           disabled={disabled || isFull}
@@ -178,10 +178,10 @@ export default function ImageUpload({
           <>
             <Upload className="w-8 h-8 text-gray-400 mb-2" />
             <p className="text-sm text-gray-600 text-center px-4">
-              Drag and drop images here, or click to select
+              Drag and drop images or PDFs here, or click to select
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              JPEG, PNG, WebP, or GIF (max 10MB each)
+              JPEG, PNG, WebP, GIF, or PDF (max 20MB each)
             </p>
           </>
         ) : (
@@ -192,11 +192,20 @@ export default function ImageUpload({
                   key={image.id}
                   className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100"
                 >
-                  <img
-                    src={image.dataUrl}
-                    alt={image.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {image.type === 'pdf' ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-red-50">
+                      <FileText className="w-8 h-8 text-red-600 mb-1" />
+                      <p className="text-xs text-gray-700 text-center truncate w-full px-1">
+                        {image.name}
+                      </p>
+                    </div>
+                  ) : (
+                    <img
+                      src={image.dataUrl}
+                      alt={image.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -204,7 +213,7 @@ export default function ImageUpload({
                     }}
                     disabled={disabled}
                     className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                    aria-label="Remove image"
+                    aria-label="Remove file"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -228,7 +237,7 @@ export default function ImageUpload({
       {/* Helper Text */}
       {!error && images.length > 0 && (
         <p className="mt-2 text-xs text-gray-500">
-          Images will be mapped to slides by the AI
+          Files will be analyzed and mapped to relevant slides by the AI
         </p>
       )}
     </div>

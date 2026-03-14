@@ -59,7 +59,74 @@ GOOGLE_API_KEY=your_api_key_here
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser (or on your mobile device on the same network)
+5. Open [http://localhost:3000](http://localhost:3000) in your browser on your computer
+
+## 📱 Accessing from Mobile Device
+
+To view and test your presentation on a mobile device while running the dev server on your PC/MacBook:
+
+### Step 1: Find Your Computer's Local IP Address
+
+**Quick Method (macOS/Linux):**
+```bash
+npm run get-ip
+```
+This will automatically detect and display your local IP address with the correct URL.
+
+**Manual Method:**
+
+**On macOS:**
+```bash
+ipconfig getifaddr en0
+# or for Wi-Fi
+ipconfig getifaddr en1
+```
+
+**On Linux:**
+```bash
+hostname -I
+# or
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+**On Windows:**
+```bash
+ipconfig | findstr IPv4
+```
+Look for the IPv4 address under your active network adapter (usually starts with `192.168.x.x` or `10.x.x.x`)
+
+### Step 2: Ensure Both Devices Are on Same Network
+
+- Make sure your computer and mobile device are connected to the **same Wi-Fi network**
+- Mobile data won't work - both devices must be on the same local network
+
+### Step 3: Access from Mobile Device
+
+1. **On your mobile device**, open a web browser (Safari, Chrome, etc.)
+2. **Enter the URL**: `http://[YOUR_LOCAL_IP]:3000`
+   - Example: If your IP is `192.168.1.100`, use `http://192.168.1.100:3000`
+3. The app should load on your mobile device!
+
+### Troubleshooting
+
+**Can't connect from mobile?**
+- ✅ Verify both devices are on the same Wi-Fi network
+- ✅ Check that your computer's firewall allows connections on port 3000
+- ✅ Make sure the dev server is running (`npm run dev`)
+- ✅ Try accessing `http://localhost:3000` on your computer first to confirm server is running
+- ✅ Double-check the IP address - it may change if you reconnect to Wi-Fi
+
+**Firewall Issues (macOS):**
+- System Preferences → Security & Privacy → Firewall
+- Allow Node.js/Next.js through firewall if prompted
+
+**Firewall Issues (Windows):**
+- Windows Defender Firewall may block the connection
+- Allow Node.js through firewall when prompted, or manually add port 3000
+
+**IP Address Changed?**
+- If you reconnect to Wi-Fi, your IP address may change
+- Run the IP finder command again to get the new address
 
 ## 📱 Usage
 
